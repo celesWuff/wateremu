@@ -11,6 +11,8 @@ BLECharacteristic* rxdCharacteristic;
 BLECharacteristic* atsendCharacteristic;
 BLECharacteristic* atrespCharacteristic;
 
+#define EMULATE_NEW_FIRMWARE
+
 #define DEVICE_NAME "Water12345"
 
 #define SERVICE_MAIN_UUID "F1F0"
@@ -54,26 +56,40 @@ class TxdCharacteristicCallbacks : public BLECharacteristicCallbacks {
 
         int dType = value[3]; // "dType" as-is in the original code
         
-        // FEFE 09B0 0101 0000: start stage 1
+        // FEFE 09B0 0101 0000: start prologue
         if (dType == 0xB0) {
-          Serial.println("Received B0 on TXD, sending FDFD 09B0 on RXD");
+#ifdef EMULATE_NEW_FIRMWARE
+          Serial.println("Received B0 on TXD, sending AE on RXD (new firmware)");
+          std::vector<uint8_t> response = {0xFD, 0xFD, 0x09, 0xAE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12}; // malformed, to be fixed
+#else
+          Serial.println("Received B0 on TXD, sending B0 on RXD (old firmware)");
           std::vector<uint8_t> response = {0xFD, 0xFD, 0x09, 0xB0, 0x01, 0x42, 0x02, 0x00, 0x07, 0xE2, 0xEB, 0x20, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+#endif
           rxdCharacteristic->setValue(response.data(), response.size());
           rxdCharacteristic->notify();
         }
 
-        // FEFE 09B2...: start stage 2
+        // FEFE 09B2...: start epilogue, legacy
         // 
         // Example B2 payload 1: FE FE 09 B2 01 01 0D 00 01 15 92 09 11 09 13 40 26 00 00 00
         // Example B2 payload 2: FE FE 09 B2 01 xx xx 00 70 E2 EB 20 01 01 00 00 00 6C 30 00
         // Example B2 payload 3: FE FE 09 B2 01 xx xx 00 00 73 37 20 01 01 00 00 00 E0 01 00
         // Example B2 payload 4: FE FE 09 B2 01 01 0D 00 00 41 63 19 08 31 22 10 03 0? 52 64 (we lost half a byte here)
+        // Example B2 payload 5: FE FE 09 B2 01 xx xx 0B 00 00 00 20 01 01 00 00 00 0F 27 00 (new firmware, 999.9 L)
         //
         // known parts:
         // xx xx: crc-16, refer to waterctl for the implementation
-        // 20 01 01 00 00 00: yy-mm-dd hh:mm:ss
-        if (dType == 0xB2) {
-          Serial.println("Received B2 on TXD, sending FDFD 09B2 on RXD");
+        // 20 01 01 00 00 00: yy-mm-dd hh:mm:ss (decimal)
+        //
+        // ========================
+        //
+        // FEFE 09BB...: start epilogue, Offlinebomb exploit
+        if (dType == 0xB2 || dType == 0xBB) {
+          if (dType == 0xBB) {
+            Serial.println("Received BB (Offlinebomb) on TXD, sending B2 on RXD");
+          } else {
+            Serial.println("Received B2 on TXD, sending B2 on RXD");
+          }
           std::vector<uint8_t> responseB2 = {0xFD, 0xFD, 0x09, 0xB2, 0x01, 0x42, 0x09, 0x01, 0x00, 0x00, 0x6D, 0x6C, 0x00, 0x02, 0x79, 0x32};
           rxdCharacteristic->setValue(responseB2.data(), responseB2.size());
           rxdCharacteristic->notify();
@@ -83,24 +99,33 @@ class TxdCharacteristicCallbacks : public BLECharacteristicCallbacks {
           rxdCharacteristic->notify();
         }
 
-        // FEFE 09B3 0000: end/disconnect stage 1
+        // FEFE 09B3 0000: end prologue
         if (dType == 0xB3) {
-          Serial.println("Received B3 on TXD, sending response FDFD 09B3 on RXD");
+          Serial.println("Received B3 on TXD, sending response B3 on RXD");
           std::vector<uint8_t> response = {0xFD, 0xFD, 0x09, 0xB3, 0x38, 0xBB, 0x02, 0x00, 0x70, 0xE2, 0xEB, 0x20, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
           // known parts (RXD response):
+          // 20 01 01 00 00 00: yy-mm-dd hh:mm:ss (decimal)
           // last 3 bytes: cost in little-endian; to calculate the cost, convert to decimal, divide by 10, multiply by hotWaterPrice (25 by default), divide by 1000 and round to 2 decimal places
           // Example: B2 00 00 -> 0x0000B2 -> 0xB2 / 10 * 25 / 1000 = 0.45 RMB
           rxdCharacteristic->setValue(response.data(), response.size());
           rxdCharacteristic->notify();
         } 
 
-        // FEFE 09B4 0000: end/disconnect stage 2
+        // FEFE 09B4 0000: end epilogue
         if (dType == 0xB4) {
           Serial.println("Received B4 on TXD. It should disconnect now");
           // uint16_t connId = characteristic->getHandle();
           // if (connId != 0) {
           //   server->disconnect(connId);
           // }
+        }
+
+        // FEFE 09AF: key authentication
+        if (dType == 0xAF) {
+          Serial.println("Received AF on TXD, sending AF on RXD");
+          std::vector<uint8_t> response = {0xFD, 0xFD, 0x09, 0xAF, 0x00, 0x00, 0x01, 0x02, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12}; // malformed, to be fixed
+          rxdCharacteristic->setValue(response.data(), response.size());
+          rxdCharacteristic->notify();
         }
       }
     }
