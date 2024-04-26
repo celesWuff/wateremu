@@ -167,10 +167,16 @@ void setup() {
 
   atService->start();
 
+  BLEAdvertisementData advertisementData = BLEAdvertisementData();
+  char manufacturerData[2] = {0x4D, 0x54}; 
+  advertisementData.setManufacturerData(manufacturerData);
+
   BLEAdvertising* advertising = BLEDevice::getAdvertising();
   advertising->addServiceUUID(SERVICE_MAIN_UUID);
   advertising->addServiceUUID(SERVICE_AT_UUID);
   advertising->setScanResponse(true);
+  advertising->setAdvertisementData(advertisementData);
+
   BLEDevice::startAdvertising();
   Serial.println("BLE server started");
 }
