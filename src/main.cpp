@@ -11,6 +11,8 @@ BLECharacteristic* rxdCharacteristic;
 BLECharacteristic* atsendCharacteristic;
 BLECharacteristic* atrespCharacteristic;
 
+#define DEVICE_NAME "Water12345"
+
 #define SERVICE_MAIN_UUID "F1F0"
 #define CHARACTERISTIC_TXD_UUID "F1F1"
 #define CHARACTERISTIC_RXD_UUID "F1F2"
@@ -108,7 +110,7 @@ class AtsendCharacteristicCallbacks : public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic* characteristic) {
       std::string value = characteristic->getValue();
       if (value.length() > 0) {
-        Serial.println("Received ATSend data: " + String(value.c_str()));
+        Serial.println("Received data on ATSend: " + String(value.c_str()));
       }
     }
 };
@@ -117,7 +119,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("wateremu by celesWuff");
 
-  BLEDevice::init("Water12345");
+  BLEDevice::init(DEVICE_NAME);
   server = BLEDevice::createServer();
   server->setCallbacks(new ServerCallbacks());
 
