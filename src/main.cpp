@@ -130,12 +130,18 @@ void setup() {
                                           BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR
                                         );
   txdCharacteristic->setCallbacks(new TxdCharacteristicCallbacks());
+  BLEDescriptor* txdDescriptor = new BLEDescriptor(BLEUUID((uint16_t)0x2901));
+  txdDescriptor->setValue("TXD");
+  txdCharacteristic->addDescriptor(txdDescriptor);
 
   rxdCharacteristic = mainService->createCharacteristic(
                                           CHARACTERISTIC_RXD_UUID,
                                           BLECharacteristic::PROPERTY_NOTIFY
                                         );
   rxdCharacteristic->addDescriptor(new BLE2902());
+  BLEDescriptor* rxdDescriptor = new BLEDescriptor(BLEUUID((uint16_t)0x2901));
+  rxdDescriptor->setValue("RXD");
+  rxdCharacteristic->addDescriptor(rxdDescriptor);
 
   mainService->start();
 
@@ -146,12 +152,18 @@ void setup() {
                                           BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR
                                         );
   atsendCharacteristic->setCallbacks(new AtsendCharacteristicCallbacks());
+  BLEDescriptor* atsendDescriptor = new BLEDescriptor(BLEUUID((uint16_t)0x2901));
+  atsendDescriptor->setValue("ATSend");
+  atsendCharacteristic->addDescriptor(atsendDescriptor);
 
   atrespCharacteristic = atService->createCharacteristic(
                                           CHARACTERISTIC_ATRESP_UUID,
                                           BLECharacteristic::PROPERTY_NOTIFY
                                         );
   atrespCharacteristic->addDescriptor(new BLE2902());
+  BLEDescriptor* atrespDescriptor = new BLEDescriptor(BLEUUID((uint16_t)0x2901));
+  atrespDescriptor->setValue("ATResp");
+  atrespCharacteristic->addDescriptor(atrespDescriptor);
 
   atService->start();
 
