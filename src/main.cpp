@@ -197,8 +197,8 @@ void setup() {
   advertisementData.setManufacturerData(manufacturerData);
 
   BLEAdvertising* advertising = BLEDevice::getAdvertising();
-  advertising->addServiceUUID(SERVICE_MAIN_UUID);
-  advertising->addServiceUUID(SERVICE_AT_UUID);
+  // advertising->addServiceUUID(SERVICE_MAIN_UUID);
+  // advertising->addServiceUUID(SERVICE_AT_UUID);
   advertising->setScanResponse(true);
   advertising->setAdvertisementData(advertisementData);
 
