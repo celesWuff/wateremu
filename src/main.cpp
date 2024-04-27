@@ -59,12 +59,23 @@ class TxdCharacteristicCallbacks : public BLECharacteristicCallbacks {
         // FEFE 09B0 0101 0000: start prologue
         if (dType == 0xB0) {
 #ifdef EMULATE_NEW_FIRMWARE
-          Serial.println("Received B0 on TXD, sending AE on RXD (new firmware)");
+          Serial.println("Received B0 on TXD, sending B1+AE on RXD (new firmware)");
+          std::vector<uint8_t> responseB1 = {0xFD, 0xFD, 0x09, 0xB1, 0x1D, 0x00, 0x00, 0x00};
+          rxdCharacteristic->setValue(responseB1.data(), responseB1.size());
+          rxdCharacteristic->notify();
           std::vector<uint8_t> response = {0xFD, 0xFD, 0x09, 0xAE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12}; // malformed, to be fixed
 #else
           Serial.println("Received B0 on TXD, sending B0 on RXD (old firmware)");
           std::vector<uint8_t> response = {0xFD, 0xFD, 0x09, 0xB0, 0x01, 0x42, 0x02, 0x00, 0x07, 0xE2, 0xEB, 0x20, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 #endif
+          rxdCharacteristic->setValue(response.data(), response.size());
+          rxdCharacteristic->notify();
+        }
+
+        // FEFE 09AF: key authentication (new firmware only)
+        if (dType == 0xAF) {
+          Serial.println("Received AF on TXD, sending AF on RXD");
+          std::vector<uint8_t> response = {0xFD, 0xFD, 0x09, 0xAF, 0x00, 0x00, 0x01, 0x02, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12}; // malformed, to be fixed
           rxdCharacteristic->setValue(response.data(), response.size());
           rxdCharacteristic->notify();
         }
@@ -118,14 +129,6 @@ class TxdCharacteristicCallbacks : public BLECharacteristicCallbacks {
           // if (connId != 0) {
           //   server->disconnect(connId);
           // }
-        }
-
-        // FEFE 09AF: key authentication
-        if (dType == 0xAF) {
-          Serial.println("Received AF on TXD, sending AF on RXD");
-          std::vector<uint8_t> response = {0xFD, 0xFD, 0x09, 0xAF, 0x00, 0x00, 0x01, 0x02, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12}; // malformed, to be fixed
-          rxdCharacteristic->setValue(response.data(), response.size());
-          rxdCharacteristic->notify();
         }
       }
     }
