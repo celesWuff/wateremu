@@ -205,6 +205,7 @@ void setup() {
 
   BLEAdvertisementData advertisementData = BLEAdvertisementData();
   char manufacturerData[2] = {0x4D, 0x54}; 
+  advertisementData.setFlags(0x06); // BR_EDR_NOT_SUPPORTED 0x04, LE General Discoverable Mode 0x02
   advertisementData.setManufacturerData(manufacturerData);
 
   BLEAdvertising* advertising = BLEDevice::getAdvertising();
