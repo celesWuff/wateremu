@@ -73,12 +73,14 @@ class TxdCharacteristicCallbacks : public BLECharacteristicCallbacks {
         }
 
         // FEFE 09AF: key authentication (new firmware only)
+#ifdef EMULATE_NEW_FIRMWARE
         if (dType == 0xAF) {
           Serial.println("Received AF on TXD, sending AF on RXD");
           std::vector<uint8_t> response = {0xFD, 0xFD, 0x09, 0xAF, 0x00, 0x00, 0x01, 0x02, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12}; // malformed, to be fixed
           rxdCharacteristic->setValue(response.data(), response.size());
           rxdCharacteristic->notify();
         }
+#endif
 
         // FEFE 09B2...: start epilogue, legacy
         // 
@@ -112,7 +114,7 @@ class TxdCharacteristicCallbacks : public BLECharacteristicCallbacks {
 
         // FEFE 09B3 0000: end prologue
         if (dType == 0xB3) {
-          Serial.println("Received B3 on TXD, sending response B3 on RXD");
+          Serial.println("Received B3 on TXD, sending B3 on RXD");
           std::vector<uint8_t> response = {0xFD, 0xFD, 0x09, 0xB3, 0x38, 0xBB, 0x02, 0x00, 0x70, 0xE2, 0xEB, 0x20, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
           // known parts (RXD response):
           // 20 01 01 00 00 00: yy-mm-dd hh:mm:ss (decimal)
@@ -146,6 +148,12 @@ class AtsendCharacteristicCallbacks : public BLECharacteristicCallbacks {
 void setup() {
   Serial.begin(115200);
   Serial.println("wateremu by celesWuff");
+
+#ifdef EMULATE_NEW_FIRMWARE
+  Serial.println("Emulating new firmware");
+#else
+  Serial.println("Emulating old firmware");
+#endif
 
   BLEDevice::init(DEVICE_NAME);
   server = BLEDevice::createServer();
