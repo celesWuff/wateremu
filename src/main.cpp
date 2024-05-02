@@ -99,7 +99,12 @@ class TxdCharacteristicCallbacks : public BLECharacteristicCallbacks {
         // FEFE 09BB...: start epilogue, Offlinebomb exploit
         if (dType == 0xB2 || dType == 0xBB) {
           if (dType == 0xBB) {
-            Serial.println("Received BB (Offlinebomb) on TXD, sending B2 on RXD");
+#ifdef EMULATE_NEW_FIRMWARE
+            Serial.println("Received BB (Offlinebomb) on TXD, sending B2 on RXD (new firmware)");
+#else
+            Serial.println("Received BB (Offlinebomb) on TXD, ignoring (old firmware)");
+            return;
+#endif
           } else {
             Serial.println("Received B2 on TXD, sending B2 on RXD");
           }
